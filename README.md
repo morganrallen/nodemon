@@ -1,17 +1,24 @@
+![nodemon logo](http://nodemon.io/nodemon.svg)
+
 # nodemon
 
-For use during development of a node.js based application. 
+[![Flattr this](http://api.flattr.com/button/flattr-badge-large.png)](http://flattr.com/thing/1211372/remynodemon-on-GitHub)
 
-nodemon will watch the files in the directory that nodemon was started, and if they change, it will automatically restart your node application.
+For use during development of a node.js based application.
+
+nodemon will watch the files in the directory in which nodemon was started, and if any files change, nodemon will automatically restart your node application.
 
 nodemon does **not** require *any* changes to your code or method of development. nodemon simply wraps your node application and keeps an eye on any files that have changed. Remember that nodemon is a replacement wrapper for `node`, think of it as replacing the word "node" on the command line when you run your script.
+
+[![NPM version](https://badge.fury.io/js/nodemon.svg)](http://badge.fury.io/js/nodemon)
+[![Travis Status](https://travis-ci.org/remy/nodemon.svg?branch=master)](https://travis-ci.org/remy/nodemon)
 
 # Installation
 
 Either through forking or by using [npm](http://npmjs.org) (the recommended way):
 
-    npm install nodemon -g
-    
+    npm install -g nodemon
+
 And nodemon will be installed in to your bin path. Note that as of npm v1, you must explicitly tell npm to install globally as nodemon is a command line utility.
 
 # Usage
@@ -20,7 +27,11 @@ nodemon wraps your application, so you can pass all the arguments you would norm
 
     nodemon [your node app]
 
-For example, if my application accepted a host and port as the arguments, I would start it as so:
+For CLI options, use the `-h` (or `--help`) argument:
+
+    nodemon -h
+
+Using nodemon is simple, if my application accepted a host and port as the arguments, I would start it as so:
 
     nodemon ./server.js localhost 8080
 
@@ -38,11 +49,50 @@ You can also pass the debug flag to node through the command line as you would n
 
 If you have a `package.json` file for your app, you can omit the main script entirely and nodemon will read the `package.json` for the `main` property and use that value as the app.
 
-# Automatic re-running
+nodemon will also search for the `scripts.start` property in `package.json` (as of nodemon 1.1.x).
 
-nodemon was original written to restart hanging processes such as web servers, but now supports apps that cleanly exit. If your script exits cleanly, nodemon will continue to monitor the directory (or directories) and restart the script if there are any changes.
+Also check out the [FAQ](https://github.com/remy/nodemon/blob/master/faq.md) or [issues](https://github.com/remy/nodemon/issues) for nodemon.
 
-# Running non-node scripts
+## Automatic re-running
+
+nodemon was originally written to restart hanging processes such as web servers, but now supports apps that cleanly exit. If your script exits cleanly, nodemon will continue to monitor the directory (or directories) and restart the script if there are any changes.
+
+## Manual restarting
+
+Whilst nodemon is running, if you need to manually restart your application, instead of stopping and restart nodemon, you can simply type `rs` with a carriage return, and nodemon will restart your process.
+
+## Config files
+
+nodemon supports local and global configuration files. These are named `nodemon.json` and can be located in the current working directory or in your home directory.
+
+The specificity is as follows, so that a command line argument will always override the config file settings:
+
+- command line arguments
+- local config
+- global config
+
+A config file can take any of the command line arguments as JSON key values, for example:
+
+    {
+      "verbose": true,
+      "ignore": ["*.test.js", "fixtures/*"],
+      "execMap": {
+        "rb": "ruby",
+        "pde": "processing --sketch={{pwd}} --run"
+      }
+    }
+
+The above `nodemon.json` file might be my global config so that I have support for ruby files and processing files, and I can simply run `nodemon demo.pde` and nodemon will automatically know how to run the script even though out of the box support for processing scripts.
+
+A further example of options can be seen in [sample-nodemon.md](https://github.com/remy/nodemon/blob/master/doc/sample-nodemon.md)
+
+*This section needs better documentation, but for now you can also see `nodemon --help config` ([also here](https://github.com/remy/nodemon/blob/master/doc/cli/config.txt))*.
+
+## Using nodemon as a module
+
+Please see [doc/requireable.md](doc/requireable.md)
+
+## Running non-node scripts
 
 nodemon can also be used to execute and monitor other programs. nodemon will read the file extension of the script being run and monitor that extension instead of .js if there's no .nodemonignore:
 
@@ -50,7 +100,25 @@ nodemon can also be used to execute and monitor other programs. nodemon will rea
 
 Now nodemon will run `app.py` with python in verbose mode (note that if you're not passing args to the exec program, you don't need the quotes), and look for new or modified files with the `.py` extension.
 
-# Monitoring multiple directories
+### Default executables
+
+Using the `nodemon.json` config file, you can define your own default executables using the `execMap` property. This is particularly useful if you're working with a language that isn't supported by default by nodemon.
+
+To add support for nodemon to know about the .pl extension (for Perl), the nodemon.json file would add:
+
+    {
+      "execMap": {
+         "pl": "perl"
+      }
+    }
+
+Now running the following, nodemon will know to use `perl` as the executable:
+
+    nodemon script.pl
+
+It's generally recommended to use the global `nodemon.json` to add your own `execMap` options. However, if there's a common default that's missing, this can be merged in to the project so that nodemon supports it by default, by changing [default.js](https://github.com/remy/nodemon/blob/master/lib/config/defaults.js) and sending a pull request.
+
+## Monitoring multiple directories
 
 By default nodemon monitors the current working directory. If you want to take control of that option, use the `--watch` option to add specific paths:
 
@@ -58,37 +126,51 @@ By default nodemon monitors the current working directory. If you want to take c
 
 Now nodemon will only restart if there are changes in the `./app` or `./libs` directory. By default nodemon will traverse sub-directories, so there's no need in explicitly including sub-directories.
 
-# Delaying restarting
+## Specifying extension watch list
 
-In some situations, you may want to wait until a number of files have changed. The timeout before checking for new file changes is 1 second. If you're uploading a number of files and it's taking some number of seconds, this could cause your app to restart multiple time unnecessarily.
+By default, nodemon looks for files with the `.js`, `.coffee`, and `.litcoffee` extensions. If you use the `--exec` option and monitor `app.py` nodemon will monitor files with the extension of `.py`. However, you can specify your own list with the `-e` (or `--ext`) switch like so:
+
+    nodemon -e js,jade
+
+Now nodemon will restart on any changes to files in the directory (or subdirectories) with the extensions .js, .jade.
+
+## Ignoring files
+
+By default, nodemon will only restart when a `.js` JavaScript file changes. In some cases you will want to ignore some specific files, directories or file patterns, to prevent nodemon from prematurely restarting your application.
+
+This can be done via the command line:
+
+    nodemon --ignore lib/ --ignore tests/
+
+Or specific files can be ignored:
+
+    nodemon --ignore lib/app.js
+
+Patterns can also be ignored (but be sure to quote the arguments):
+
+    nodemon --ignore 'lib/*.js'
+
+Note that by default, nodemon will ignore the `.git`, `node_modules`, `bower_components` and `.sass-cache` directories.
+
+## Delaying restarting
+
+In some situations, you may want to wait until a number of files have changed. The timeout before checking for new file changes is 1 second. If you're uploading a number of files and it's taking some number of seconds, this could cause your app to restart multiple times unnecessarily.
 
 To add an extra throttle, or delay restarting, use the `--delay` command:
 
     nodemon --delay 10 server.js
 
-The delay figure is number of seconds to delay before restarting. So nodemon will only restart your app the given number of seconds after the *last* file change.
+For more precision, milliseconds can be specified.  Either as a float:
 
-# Ignoring files
+    nodemon --delay 2.5 server.js
 
-By default, if nodemon will only restart when a `.js` JavaScript file changes.  In some cases you will want to ignore some specific files, directories or file patterns, to prevent nodemon from prematurely restarting your application.
+Or using the time specifier (ms):
 
-You can use the [example ignore file](http://github.com/remy/nodemon/blob/master/nodemonignore.example) (note that this example file is not hidden - you must rename it to `.nodemonignore`) as a basis for your nodemon, but it's very simple to create your own:
+    nodemon --delay 2500ms server.js
 
-    # this is my ignore file with a nice comment at the top
-    
-    /vendor/*     # ignore all external submodules
-    /public/*     # static files
-    ./README.md   # a specific file
-    *.css         # ignore any CSS files too
+The delay figure is number of seconds (or milliseconds, if specified) to delay before restarting. So nodemon will only restart your app the given number of seconds after the *last* file change.
 
-The ignore file accepts:
-
-* Comments starting with a `#` symbol
-* Blank lines
-* Specific files
-* File patterns (this is converted to a regex, so you have full control of the pattern)
-
-# Controlling shutdown of your script
+## Controlling shutdown of your script
 
 nodemon sends a kill signal to your application when it sees a file update. If you need to clean up on shutdown inside your script you can capture the kill signal and handle it yourself.
 
@@ -96,32 +178,63 @@ The following example will listen once for the `SIGUSR2` signal (used by nodemon
 
     process.once('SIGUSR2', function () {
       gracefulShutdown(function () {
-        process.kill(process.pid, 'SIGUSR2'); 
-      })
+        process.kill(process.pid, 'SIGUSR2');
+      });
     });
 
-Note that the `process.kill` is *only* called once your shutdown jobs are complete. Hat tip to [Benjie Gillam](http://www.benjiegillam.com/2011/08/node-js-clean-restart-and-faster-development-with-nodemon/) for writing technique this up.
+Note that the `process.kill` is *only* called once your shutdown jobs are complete. Hat tip to [Benjie Gillam](http://www.benjiegillam.com/2011/08/node-js-clean-restart-and-faster-development-with-nodemon/) for writing this technique up.
 
+## Triggering events when nodemon state changes
 
-# Using nodemon with forever
+If you want growl like notifications when nodemon restarts or to trigger an action when an event happens, then you can either `require` nodemon or simply add event actions to your `nodemon.json` file.
 
-If you're using nodemon with [forever](https://github.com/nodejitsu/forever) (perhaps in a production environment) you can combine the two together. This way if the script crashes, forever restarts the script, and if there are file changes, nodemon restarts your script. For more detail, see [issue 30](https://github.com/remy/nodemon/issues/30).
+For example, to trigger a notification on a Mac when nodemon restarts, `nodemon.json` looks like this:
 
-To acheive this you need to include the `--exitcrash` flag to ensure nodemon exits if the script crashes (or exits unexpectedly):
+```json
+{
+  "events": {
+    "restart": "osascript -e 'display notification \"app restarted\" with title \"nodemon\"'"
+  }
+}
+```
 
-    forever nodemon --exitcrash server.js
+A full list of available events is listed on the [event states wiki](https://github.com/remy/nodemon/wiki/Events#states). Note that you can bind to both states and messages.
 
-To test this, you can kill the server.js process and forever will restart it. If you `touch server.js` nodemon will restart it.
+## Pipe output to somewhere else
 
-Note that I *would not* recommend using nodemon in a production environment - but that's because I wouldn't want it restart without my explicit instruction.
+```js
+nodemon({
+  script: ...,
+  stdout: false // important: this tells nodemon not to output to console
+}).on('readable', function() { // the `readable` event indicates that data is ready to pick up
+  this.stdout.pipe(fs.createWriteStream('output.txt'));
+  this.stderr.pipe(fs.createWriteStream('err.txt'));
+});
+```
 
-# Help! My changes aren't being detected!
+## Using io.js for nodemon
 
-nodemon has three potential methods it uses to look for file changes. First, it polls using the find command to search for files modified within the last second. This method works on systems with a BSD based find (Mac, for example). 
+If you *only* have io.js installed (and the default install creates a symlink from `node` to `iojs`), then nodemon will work just fine out of the box (or [should](https://github.com/remy/nodemon/issues/468)).
 
-Next it tries using node's fs.watch. fs.watch will not always work however, and nodemon will try and detect if this is the case by writing a file to the tmp directory and seeing if fs.watch is triggered when it's removed. If nodemon finds that fs.watch was not triggered, it will then fall back to the third method (called legacy watch), which works by statting each file in your working directory looking for changes to the last modified time. This is the most cpu intensive method, but it may be the only option on some systems.
+If you've got *both* node and io.js installed, then it's easy! You can either edit the local `nodemon.json` file (in your working directory) or in your `$HOME` directory containing:
 
-In certain cases, like when where you are working on a different drive than your tmp directory is on, fs.watch may give you a false positive. You can force nodemon to start using the most compatible legacy method by passing the -L switch, e.g. `nodemon -L /my/odd/file.js`.
+```json
+{
+  "execMap": {
+    "js": "iojs"
+  }
+}
+```
+
+Now you nodemon will use [io.js](https://iojs.org/) with JavaScript files instead of node.
+
+## Using nodemon in your gulp workflow
+
+Check out the [gulp-nodemon](https://github.com/JacksonGariety/gulp-nodemon) plugin to integrate nodemon with the rest of your project's gulp workflow.
+
+## Using nodemon in your Grunt workflow
+
+Check out the [grunt-nodemon](https://github.com/ChrisWren/grunt-nodemon) plugin to integrate nodemon with the rest of your project's grunt workflow.
 
 # License
 
